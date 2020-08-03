@@ -1351,8 +1351,10 @@ std::unique_ptr<DNSPacket> PacketHandler::doQuestion(DNSPacket& p)
     weDone = weRedirected = weHaveUnauth =  false;
     
     while(B.get(rr)) {
+      bool handledByLua = false;
 #ifdef HAVE_LUA_RECORDS
       if(rr.dr.d_type == QType::LUA) {
+        handledByLua = true;
         if(!doLua)
           continue;
         auto rec=getRR<LUARecordContent>(rr.dr);
@@ -1416,7 +1418,9 @@ std::unique_ptr<DNSPacket> PacketHandler::doQuestion(DNSPacket& p)
       if(rr.dr.d_type == QType::SOA)
         continue;
 
-      rrset.push_back(rr);
+      // lua records add their results themself to the rrset
+      if (!handledByLua)
+        rrset.push_back(rr);
     }
 
     /* Add in SOA if required */
